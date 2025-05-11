@@ -1,3 +1,9 @@
+/**
+ * Medieval Charters Knowledge Graph - Main Application Entry
+ * 
+ * This file initializes the Vue application with the router
+ * and mounts it to the DOM.
+ */
 import { createApp } from 'vue'
 import './style.css'
 import 'leaflet/dist/leaflet.css'
