@@ -19,8 +19,8 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://yourusername.github.io', 
-    'https://yourusername.github.io/medieval-charters-kg'
+    'https://jbritosm.github.io', 
+    'https://github.com/jbritosm/medieval-charters-kg'
   ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
