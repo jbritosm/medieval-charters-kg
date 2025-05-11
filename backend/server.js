@@ -15,17 +15,12 @@ const sparqlRoutes = require('./routes/sparql');
 const app = express();
 
 // Middleware Configuration
-// Enable CORS for both development and production
+// Enable CORS for all origins in production
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://jbritosm.github.io',
-    'https://jbritosm.github.io/medieval-charters-kg',
-    'https://jbritosm.github.io/medieval-charters-kg/'
-  ],
-  methods: ['GET', 'POST'],
+  origin: '*', // Allow all origins for simplicity
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  maxAge: 86400 // Cache preflight request for 24 hours
 }));
 
 // Parse JSON request bodies
