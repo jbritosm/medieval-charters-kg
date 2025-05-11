@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/index-BZKR2Mkb.js",
+    "file": "assets/index-B3H-af5Q.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -17,7 +17,7 @@
       "node_modules/leaflet/dist/leaflet-src.esm.js"
     ],
     "css": [
-      "assets/index-BMvxhQR1.css"
+      "assets/index-BewoXq-l.css"
     ]
   },
   "node_modules/leaflet/dist/images/marker-icon-2x.png": {
