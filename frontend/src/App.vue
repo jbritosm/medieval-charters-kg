@@ -1,3 +1,7 @@
+<!-- 
+  App.vue - Main application component
+  Triggering GitHub Pages deployment workflow
+-->
 <script setup>
 // No need to import components here as they're handled by the router
 </script>
