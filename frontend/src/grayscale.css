@@ -1,0 +1,41 @@
+/* 
+ * Web-safe Grayscale Color Palette
+ * These colors are chosen from the web-safe color palette
+ * and arranged in a grayscale spectrum for consistent styling
+ */
+
+:root {
+  /* Primary Grayscale Colors */
+  --gray-100: #FFFFFF; /* White */
+  --gray-200: #EEEEEE; /* Very Light Gray */
+  --gray-300: #CCCCCC; /* Light Gray */
+  --gray-400: #999999; /* Medium Gray */
+  --gray-500: #666666; /* Dark Gray */
+  --gray-600: #333333; /* Very Dark Gray */
+  --gray-700: #000000; /* Black */
+  
+  /* Accent Colors (still grayscale but with slight blue tint) */
+  --accent-light: #CCCCFF; /* Light accent */
+  --accent-medium: #9999CC; /* Medium accent */
+  --accent-dark: #666699;   /* Dark accent */
+  
+  /* Functional Colors */
+  --error: #CC9999;         /* Error (reddish gray) */
+  --success: #99CC99;       /* Success (greenish gray) */
+  --warning: #CCCC99;       /* Warning (yellowish gray) */
+  
+  /* Text Colors */
+  --text-primary: var(--gray-600);
+  --text-secondary: var(--gray-500);
+  --text-light: var(--gray-400);
+  
+  /* Background Colors */
+  --bg-primary: var(--gray-100);
+  --bg-secondary: var(--gray-200);
+  --bg-tertiary: var(--gray-300);
+  
+  /* Border Colors */
+  --border-light: var(--gray-300);
+  --border-medium: var(--gray-400);
+  --border-dark: var(--gray-500);
+} 

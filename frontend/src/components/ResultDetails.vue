@@ -23,6 +23,11 @@
       <button class="primary-button" @click="goToSearch">Go to Search</button>
     </div>
 
+    <!-- Loading indicator -->
+    <div v-else-if="loading" class="loading-container">
+      <p>Loading complete entity information...</p>
+    </div>
+
     <!-- Main content container with responsive layout based on map visibility -->
     <div v-else class="details-content" :class="{ 'map-visible': shouldShowMap }">
       <div class="layout-row" :class="{ 'centered-info': !shouldShowMap }">
@@ -30,10 +35,33 @@
         <div class="info-card">
           <h3>Information</h3>
           <div class="scrollable-content">
+            <!-- Entity ID -->
+            <div class="info-row" v-if="entityId">
+              <strong>Entity ID:</strong>
+              <span>{{ entityId }}</span>
+            </div>
+            
             <!-- Entity coordinates -->
             <div class="info-row" v-if="resultData.item.coords">
               <strong>Coordinates:</strong>
               <span>{{ resultData.item.coordinates }}</span>
+            </div>
+            
+            <!-- Entity description -->
+            <div class="info-row" v-if="resultData.item.description">
+              <strong>Description:</strong>
+              <span>{{ resultData.item.description }}</span>
+            </div>
+            
+            <!-- Entity properties section -->
+            <div v-if="entityProperties.length > 0">
+              <h4>Properties</h4>
+              <div class="properties-section">
+                <div v-for="(prop, index) in entityProperties" :key="index" class="property-row">
+                  <div class="property-label">{{ prop.label }}</div>
+                  <div class="property-value">{{ prop.value }}</div>
+                </div>
+              </div>
             </div>
             
             <!-- Residence information -->
@@ -60,20 +88,14 @@
               <span>{{ resultData.item.relationType }}</span>
             </div>
             
-            <!-- Entity description -->
-            <div class="info-row" v-if="resultData.item.description">
-              <strong>Description:</strong>
-              <span>{{ resultData.item.description }}</span>
-            </div>
-            
             <!-- Related entities section -->
-            <div v-if="resultData.item.related && resultData.item.related.length > 0">
+            <div v-if="allRelatedEntities.length > 0">
               <h4>Related Entities</h4>
               <div class="related-entity-section">
-                <div v-for="(rel, index) in resultData.item.related" :key="index" class="related-entity-row">
+                <div v-for="(rel, index) in allRelatedEntities" :key="index" class="related-entity-row">
                   <div class="relation-type">{{ rel.relation }}</div>
                   <div class="relation-name">{{ rel.name }}</div>
-                  <div class="relation-entity-type">{{ rel.type }}</div>
+                  <div class="relation-entity-type" v-if="rel.type">{{ rel.type }}</div>
                 </div>
               </div>
             </div>
@@ -104,7 +126,7 @@
                 :lat-lng="[resultData.item.coords.lat, resultData.item.coords.lon]"
                 :radius="8"
                 color="#fff"
-                :fill-color="'#3498db'"
+                :fill-color="'#9999CC'"
                 :fill-opacity="0.8"
                 :weight="1"
               >
@@ -119,7 +141,7 @@
                 :lat-lng="[resultData.item.resCoords.lat, resultData.item.resCoords.lon]"
                 :radius="8"
                 color="#fff"
-                :fill-color="'#e74c3c'"
+                :fill-color="'#666666'"
                 :fill-opacity="0.8"
                 :weight="1"
               >
@@ -154,7 +176,7 @@
       <!-- Raw SPARQL data section (collapsible) -->
       <div v-if="showAdvancedData" class="raw-data-card">
         <h3>Raw Data</h3>
-        <pre class="json-display">{{ JSON.stringify(resultData.rawData, null, 2) }}</pre>
+        <pre class="json-display">{{ JSON.stringify(completeEntityData || resultData.rawData, null, 2) }}</pre>
       </div>
     </div>
   </div>
@@ -166,6 +188,7 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { LMap, LTileLayer, LCircleMarker, LPopup } from '@vue-leaflet/vue-leaflet';
 import "leaflet/dist/leaflet.css";
+import api from '../services/api';
 
 // Fix Leaflet icon issue with webpack/vite bundling
 import L from 'leaflet';
@@ -179,10 +202,15 @@ L.Icon.Default.mergeOptions({
 // Initialize router and reactive state
 const router = useRouter();
 const resultData = ref(null);          // Contains the selected entity data
+const completeEntityData = ref(null);  // Contains complete entity data from additional query
+const entityProperties = ref([]);      // Formatted entity properties
+const allRelatedEntities = ref([]);    // Combined related entities
+const entityId = ref(null);            // Entity ID
 const mapRef = ref(null);              // Reference to the Leaflet map component
 const hasCoordinates = ref(false);     // Flag for entity coordinates
 const hasResidenceCoordinates = ref(false);  // Flag for residence coordinates
 const showAdvancedData = ref(false);   // Toggle state for raw data display
+const loading = ref(false);            // Loading state for additional data
 
 /**
  * Determines whether to show the map based on available coordinates
@@ -231,12 +259,16 @@ const goBack = () => {
   router.back();
 };
 
-// Go to search page
+/**
+ * Go to search page
+ */
 const goToSearch = () => {
   router.push('/');
 };
 
-// Parse the WKT (Well-Known Text) coordinate format from Wikidata
+/**
+ * Parse the WKT (Well-Known Text) coordinate format from Wikidata
+ */
 const parseWKT = (wkt) => {
   if (!wkt) return null;
   
@@ -249,6 +281,136 @@ const parseWKT = (wkt) => {
   }
   
   return null;
+};
+
+/**
+ * Extract entity ID from URI
+ */
+const extractEntityId = (uri) => {
+  if (!uri) return null;
+  
+  // Extract ID from URI pattern
+  const match = uri.match(/\/entity\/([^/]+)$/);
+  if (match) {
+    return match[1];
+  }
+  
+  return null;
+};
+
+/**
+ * Fetch complete entity information using SPARQL
+ */
+const fetchEntityDetails = async (entityUri) => {
+  if (!entityUri) return;
+  
+  loading.value = true;
+  
+  try {
+    // Extract entity ID from URI
+    const id = extractEntityId(entityUri);
+    if (id) {
+      entityId.value = id;
+      
+      // Build SPARQL query to get all properties and values for this entity
+      const query = `
+PREFIX wb: <https://medievalcharterskg.wikibase.cloud/entity/>
+PREFIX wbt: <https://medievalcharterskg.wikibase.cloud/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX p: <https://medievalcharterskg.wikibase.cloud/prop/>
+PREFIX ps: <https://medievalcharterskg.wikibase.cloud/prop/statement/>
+PREFIX pq: <https://medievalcharterskg.wikibase.cloud/prop/qualifier/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?propLabel ?value ?valueLabel WHERE {
+  # Get the entity
+  wb:${id} ?prop ?statement .
+  
+  # Only get properties (not labels, etc)
+  ?property wikibase:directClaim ?prop .
+  ?property rdfs:label ?propLabel .
+  
+  # Get the value
+  ?statement ?ps ?value .
+  
+  # Only get direct values
+  ?property wikibase:statementProperty ?ps .
+  
+  # Optional label for the value
+  OPTIONAL {
+    ?value rdfs:label ?valueLabel .
+  }
+  
+  # Get labels in Spanish or English
+  FILTER(LANG(?propLabel) = "es" || LANG(?propLabel) = "en")
+  
+  # Filter out some system properties
+  FILTER(?prop != rdfs:label)
+  FILTER(?prop != <http://schema.org/description>)
+}
+ORDER BY ?propLabel`;
+
+      // Execute the query
+      const response = await api.sparqlQuery(query);
+      completeEntityData.value = response.data;
+      
+      // Process properties
+      if (response.data && response.data.results && response.data.results.bindings) {
+        const properties = [];
+        const relatedEntities = [];
+        
+        response.data.results.bindings.forEach(binding => {
+          // Get property label
+          const propLabel = binding.propLabel?.value || 'Unknown property';
+          
+          // Get value or valueLabel if available
+          let value = binding.valueLabel?.value || binding.value?.value || 'Unknown value';
+          
+          // Check if this is a related entity
+          if (binding.value?.type === 'uri' && binding.value.value.includes('/entity/')) {
+            // Add to related entities
+            const entityLabel = binding.valueLabel?.value || extractEntityId(binding.value.value);
+            
+            // Only add entities whose labels are not just numbers
+            if (!isNumericLabel(entityLabel)) {
+              relatedEntities.push({
+                relation: propLabel,
+                name: entityLabel,
+                uri: binding.value.value
+              });
+            }
+          } else {
+            // Add to properties
+            properties.push({
+              label: propLabel,
+              value: value
+            });
+          }
+        });
+        
+        // Set properties and combine with existing related entities
+        entityProperties.value = properties;
+        
+        // Combine all related entities, filtering out numeric labels
+        const existingRelated = (resultData.value.item.related || [])
+          .filter(rel => !isNumericLabel(rel.name));
+        
+        allRelatedEntities.value = [...relatedEntities, ...existingRelated];
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching entity details:", err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
+ * Check if a label is just a number
+ */
+const isNumericLabel = (label) => {
+  if (!label) return false;
+  return /^\d+$/.test(label.trim());
 };
 
 onMounted(async () => {
@@ -302,12 +464,17 @@ onMounted(async () => {
           const map = mapRef.value.leafletObject;
           if (map) map.invalidateSize();
         }, 500);
+      }
+      
+      // Fetch additional entity details
+      if (resultData.value.rawData) {
+        // Try to get the entity URI
+        const entityUri = resultData.value.rawData.entity?.value || 
+                          resultData.value.rawData.person?.value;
         
-        // Final resize after everything is settled
-        setTimeout(() => {
-          const map = mapRef.value.leafletObject;
-          if (map) map.invalidateSize();
-        }, 1000);
+        if (entityUri) {
+          await fetchEntityDetails(entityUri);
+        }
       }
     } catch (err) {
       console.error("Error parsing stored data:", err);
@@ -316,187 +483,117 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
+<style>
+@import '../grayscale.css';
+
 .result-details-container {
-  width: 100vw;
-  max-width: 100vw;
-  margin: 0;
-  padding: 0;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-}
-
-.layout-row {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  flex: 1;
-  overflow: hidden;
   width: 100%;
-  padding: 0 15px;
-  box-sizing: border-box;
-}
-
-/* Center the info card when no map is displayed */
-.centered-info {
-  justify-content: center;
-  align-items: center;
-}
-
-.centered-info .info-card {
-  max-width: 650px;
-  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .layout-row {
-    flex-direction: row;
-    height: calc(100vh - 180px);
-    padding: 0 20px;
-    width: 100%;
-  }
-  
-  .info-card {
-    width: 40%;
-    margin-right: 20px;
-  }
-  
-  .map-section {
-    width: 60%;
-    flex: 1;
-  }
-  
-  /* Adjust info card width when no map is displayed */
-  .centered-info .info-card {
-    width: 70%;
-    max-width: 700px;
-    margin: 0 auto;
-  }
-  
-  /* When no map, switch back to column on mobile */
-  .centered-info {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 768px) {
-  .result-details-container {
-    height: 100vh;
-    width: 100vw;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .layout-row {
-    flex-direction: column;
-    padding: 0 10px;
-    width: 100%;
-  }
-  
-  .centered-info .info-card {
-    width: 100%;
-  }
-  
-  .map-container {
-    height: 350px;
-    width: 100%;
-  }
-  
-  .info-card {
-    padding: 15px;
-    width: 100%;
-  }
-  
-  .map-visible .info-card {
-    padding: 12px;
-  }
-  
-  .map-visible .info-row {
-    margin-bottom: 8px;
-  }
-  
-  h3 {
-    margin: 10px 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .result-details-container {
-    height: 100vh;
-    width: 100vw;
-    margin: 0;
-    padding: 0;
-  }
-  
-  .layout-row {
-    padding: 0 5px;
-    width: 100%;
-  }
-  
-  .map-container {
-    height: 250px;
-    width: 100%;
-  }
-  
-  .header-section {
-    margin-bottom: 10px;
-  }
-  
-  .info-card, .map-section {
-    padding: 10px;
-    width: 100%;
-  }
-  
-  .map-visible .info-card {
-    padding: 8px;
-  }
-  
-  h3 {
-    margin: 8px 0 10px;
-    font-size: 1.1rem;
-  }
-  
-  .details-content {
-    gap: 10px;
-  }
+  padding: 20px 15px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  overflow: hidden;
 }
 
 .header-section {
-  width: 100%;
-  padding: 15px;
-  box-sizing: border-box;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #eee;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.back-button {
+  background-color: var(--gray-200);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background-color: var(--gray-300);
+  border-color: var(--accent-medium);
+}
+
+h2 {
+  margin: 10px 0;
+  color: var(--text-primary);
+  font-size: 24px;
+}
+
+.entity-type {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.search-query {
+  font-style: italic;
+  color: var(--text-light);
+  margin: 5px 0;
+}
+
+.no-data-message, .loading-container {
+  text-align: center;
+  margin: 50px 0;
+  color: var(--text-secondary);
+}
+
+.primary-button {
+  background-color: var(--accent-dark);
+  color: var(--gray-100);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+.primary-button:hover {
+  background-color: var(--accent-medium);
 }
 
 .details-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  height: calc(100vh - 140px);
-  width: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
-.info-card {
-  background-color: #fff;
+.layout-row {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.centered-info {
+  justify-content: center;
+}
+
+.map-visible .info-card {
+  width: 40%;
+}
+
+.map-visible .map-section {
+  width: 60%;
+}
+
+.info-card, .map-section, .raw-data-card {
+  background-color: var(--bg-primary);
   border-radius: 8px;
-  padding: 15px;
-  border: 1px solid #ddd;
+  padding: 20px;
+  border: 1px solid var(--border-light);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  overflow: hidden;
 }
 
 .scrollable-content {
@@ -554,7 +651,7 @@ onMounted(async () => {
   gap: 20px;
   justify-content: center;
   padding: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--gray-200);
   border-radius: 4px;
 }
 
@@ -569,15 +666,15 @@ onMounted(async () => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid #fff;
+  border: 1px solid var(--gray-100);
 }
 
 .entity-marker {
-  background-color: #3498db;
+  background-color: var(--accent-medium);
 }
 
 .residence-marker {
-  background-color: #e74c3c;
+  background-color: var(--gray-500);
 }
 
 .info-row {
@@ -595,42 +692,42 @@ onMounted(async () => {
 
 .info-row strong {
   margin-bottom: 5px;
-  color: #555;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
-.related-entity-section {
+.properties-section, .related-entity-section {
   max-height: 200px;
   overflow-y: auto;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-light);
   padding-top: 10px;
 }
 
-.related-entity-row {
+.property-row, .related-entity-row {
   padding: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
   margin-bottom: 10px;
 }
 
-.related-entity-row:last-child {
+.property-row:last-child, .related-entity-row:last-child {
   border-bottom: none;
 }
 
-.relation-type {
+.property-label, .relation-type {
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
-.relation-name {
-  color: #555;
+.property-value, .relation-name {
+  color: var(--text-secondary);
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
 .relation-entity-type {
   font-size: 12px;
-  color: #777;
+  color: var(--text-light);
   margin-top: 5px;
 }
 
@@ -640,15 +737,15 @@ onMounted(async () => {
   margin: 0;
   width: 100%;
   padding: 10px 0;
-  background-color: #f8f9fa;
-  border-top: 1px solid #eee;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
   z-index: 10;
 }
 
 .toggle-advanced-button {
-  background-color: #f8f9fa;
-  color: #3498db;
-  border: 1px solid #ddd;
+  background-color: var(--bg-secondary);
+  color: var(--accent-dark);
+  border: 1px solid var(--border-light);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
@@ -657,15 +754,15 @@ onMounted(async () => {
 }
 
 .toggle-advanced-button:hover {
-  background-color: #edf2f7;
-  border-color: #3498db;
+  background-color: var(--gray-300);
+  border-color: var(--accent-medium);
 }
 
 .raw-data-card {
-  background-color: #fff;
+  background-color: var(--bg-primary);
   border-radius: 8px;
   padding: 15px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   max-height: 200px;
   overflow-y: auto;
@@ -678,7 +775,7 @@ onMounted(async () => {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   line-height: 1.5;
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* Responsive layout for larger screens */
@@ -695,68 +792,32 @@ onMounted(async () => {
 
 h2, h3, h4 {
   margin: 10px 0;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 h4 {
-  margin-top: 15px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #eee;
+  margin-top: 20px;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 5px;
 }
 
-.entity-type {
-  display: inline-block;
-  background-color: #edf2f7;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #4a5568;
-  margin-bottom: 10px;
-}
-
-.search-query {
-  color: #666;
-  font-style: italic;
-  margin-top: 5px;
-}
-
-.back-button {
-  background-color: transparent;
-  color: #3498db;
-  border: 1px solid #3498db;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.back-button:hover {
-  background-color: #3498db;
-  color: white;
-}
-
-.no-data-message {
-  padding: 30px;
-  text-align: center;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  margin: 30px 0;
-}
-
-.primary-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 15px;
-}
-
-.primary-button:hover {
-  background-color: #2980b9;
+@media (max-width: 768px) {
+  .layout-row {
+    flex-direction: column;
+  }
+  
+  .map-visible .info-card,
+  .map-visible .map-section {
+    width: 100%;
+  }
+  
+  .map-section {
+    height: 300px;
+  }
+  
+  .result-details-container {
+    height: auto;
+    padding: 10px;
+  }
 }
 </style> 

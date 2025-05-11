@@ -1,6 +1,6 @@
 <!-- 
   App.vue - Main application component
-  Triggering GitHub Pages deployment workflow
+  Using web-safe grayscale color scheme
 -->
 <script setup>
 // No need to import components here as they're handled by the router
@@ -27,14 +27,16 @@
 </template>
 
 <style>
+@import './grayscale.css';
+
 body, html {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #f0f2f5;
-  color: #333;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
   box-sizing: border-box;
 }
 
@@ -50,8 +52,8 @@ body, html {
 }
 
 .app-header {
-  background-color: #2c3e50;
-  color: white;
+  background-color: var(--gray-600);
+  color: var(--gray-100);
   padding: 1rem 1.5rem;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -71,7 +73,7 @@ body, html {
 .app-content {
   flex: 1;
   padding: 0;
-  background-color: #f0f2f5;
+  background-color: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -79,8 +81,8 @@ body, html {
 }
 
 .app-footer {
-  background-color: #2c3e50;
-  color: #ecf0f1;
+  background-color: var(--gray-600);
+  color: var(--gray-200);
   text-align: center;
   padding: 0.8rem;
   font-size: 0.8rem;

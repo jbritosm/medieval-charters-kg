@@ -169,55 +169,70 @@ const formattedResults = computed(() => {
     return [];
   }
   
-  return results.value.results.bindings.map(binding => {
-    // Extract basic info
-    const result = {
-      label: binding.entityLabel?.value || binding.personLabel?.value || 'Unnamed Entity',
-      coordinates: null,
-      description: binding.description?.value || null,
-      related: [],
-      personName: binding.personLabel?.value || null,
-      relationType: binding.relationType?.value || 'Related to',
-      entityType: binding.label?.value || 'Entity',
-      // Residence information
-      residence: binding.residenceLabel?.value || null,
-      residenceCoordinates: null,
-      // Score information for matching
-      score: binding.score?.value ? parseFloat(binding.score.value) : 0,
-      // Store the original binding for details view
-      rawData: binding
-    };
-    
-    // Add entity's own coordinates if available
-    if (binding.coord_raw) {
-      const coords = parseWKT(binding.coord_raw.value);
-      if (coords) {
-        result.coordinates = `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`;
-        result.coords = coords; // Store parsed coordinates
+  return results.value.results.bindings
+    .map(binding => {
+      // Extract basic info
+      const result = {
+        label: binding.entityLabel?.value || binding.personLabel?.value || 'Unnamed Entity',
+        coordinates: null,
+        description: binding.description?.value || null,
+        related: [],
+        personName: binding.personLabel?.value || null,
+        relationType: binding.relationType?.value || 'Related to',
+        entityType: binding.label?.value || 'Entity',
+        // Residence information
+        residence: binding.residenceLabel?.value || null,
+        residenceCoordinates: null,
+        // Score information for matching
+        score: binding.score?.value ? parseFloat(binding.score.value) : 0,
+        // Store the original binding for details view
+        rawData: binding
+      };
+      
+      // Add entity's own coordinates if available
+      if (binding.coord_raw) {
+        const coords = parseWKT(binding.coord_raw.value);
+        if (coords) {
+          result.coordinates = `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`;
+          result.coords = coords; // Store parsed coordinates
+        }
       }
-    }
-    
-    // Add residence coordinates if available
-    if (binding.resCoord_raw) {
-      const resCoords = parseWKT(binding.resCoord_raw.value);
-      if (resCoords) {
-        result.residenceCoordinates = `${resCoords.lat.toFixed(4)}, ${resCoords.lon.toFixed(4)}`;
-        result.resCoords = resCoords; // Store parsed coordinates
+      
+      // Add residence coordinates if available
+      if (binding.residence_coord_raw) {
+        const resCoords = parseWKT(binding.residence_coord_raw.value);
+        if (resCoords) {
+          result.residenceCoordinates = `${resCoords.lat.toFixed(4)}, ${resCoords.lon.toFixed(4)}`;
+          result.resCoords = resCoords; // Store parsed coordinates
+        }
       }
-    }
-    
-    // Add related person/entity information
-    if (binding.personLabel && binding.personLabel.value) {
-      result.related.push({
-        name: binding.personLabel.value,
-        type: 'Person',
-        relation: binding.relationType?.value || 'Related to'
-      });
-    }
-    
-    return result;
-  });
+      
+      // Process related entities
+      if (binding.related_entities && binding.related_entities.value) {
+        try {
+          const relatedData = JSON.parse(binding.related_entities.value);
+          if (Array.isArray(relatedData)) {
+            // Filter out entities with numeric labels
+            result.related = relatedData.filter(rel => !isNumericLabel(rel.name));
+          }
+        } catch (e) {
+          console.error('Error parsing related entities:', e);
+        }
+      }
+      
+      return result;
+    })
+    // Filter out entities with numeric labels
+    .filter(result => !isNumericLabel(result.label));
 });
+
+/**
+ * Check if a label is just a number
+ */
+const isNumericLabel = (label) => {
+  if (!label) return false;
+  return /^\d+$/.test(label.trim());
+};
 
 /**
  * Calculates the total number of results returned from the SPARQL query
@@ -800,6 +815,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+@import '../grayscale.css';
+
 .geo-search-container {
   width: 100%;
   max-width: 800px;
@@ -845,7 +862,7 @@ onBeforeUnmount(() => {
 
 h2, h3 {
   margin-bottom: 15px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .search-input-container {
@@ -857,21 +874,23 @@ h2, h3 {
 .search-input {
   flex: 1;
   padding: 12px 15px;
-  border: 2px solid #ddd;
+  border: 2px solid var(--border-light);
   border-radius: 4px 0 0 4px;
   font-size: 16px;
   outline: none;
   min-width: 0; /* Prevents input from overflowing */
+  background-color: var(--gray-100);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
-  border-color: #3498db;
+  border-color: var(--accent-medium);
 }
 
 .search-button {
   padding: 10px 20px;
-  background-color: #3498db;
-  color: white;
+  background-color: var(--accent-dark);
+  color: var(--gray-100);
   border: none;
   border-radius: 0 4px 4px 0;
   cursor: pointer;
@@ -882,11 +901,11 @@ h2, h3 {
 }
 
 .search-button:hover:not(:disabled) {
-  background-color: #2980b9;
+  background-color: var(--accent-medium);
 }
 
 .search-button:disabled {
-  background-color: #95a5a6;
+  background-color: var(--gray-400);
   cursor: not-allowed;
 }
 
@@ -894,18 +913,19 @@ h2, h3 {
   margin: 10px 0;
   font-weight: bold;
   text-align: left;
+  color: var(--text-secondary);
 }
 
 .error {
-  color: #e74c3c;
+  color: var(--error);
 }
 
 .results-container {
-  background-color: #fff;
+  background-color: var(--bg-primary);
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #ddd;
-  color: #333;
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
   text-align: left;
   margin-top: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -922,7 +942,7 @@ h2, h3 {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   line-height: 1.5;
-  color: #333;
+  color: var(--text-primary);
   max-height: 200px;
   overflow-y: auto;
 }
@@ -930,7 +950,7 @@ h2, h3 {
 /* Results list styling */
 .no-results {
   padding: 15px;
-  color: #777;
+  color: var(--text-light);
   font-style: italic;
 }
 
@@ -944,7 +964,7 @@ h2, h3 {
 
 .result-item {
   padding: 15px;
-  border-bottom: 1px solid #e1e4e8;
+  border-bottom: 1px solid var(--border-light);
   cursor: pointer;
   transition: background-color 0.2s;
   border-radius: 4px;
@@ -955,7 +975,7 @@ h2, h3 {
 }
 
 .result-item:hover {
-  background-color: #eaf2f8;
+  background-color: var(--gray-200);
 }
 
 .result-header {
@@ -967,7 +987,7 @@ h2, h3 {
 .result-title {
   font-weight: bold;
   font-size: 18px;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 5px;
   flex: 1;
   margin-right: 10px;
@@ -982,13 +1002,13 @@ h2, h3 {
 
 .result-type {
   font-size: 14px;
-  color: #777;
+  color: var(--text-light);
 }
 
 .result-relevance {
   width: 80px;
   height: 4px;
-  background-color: #eee;
+  background-color: var(--gray-200);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -996,169 +1016,126 @@ h2, h3 {
 .relevance-indicator {
   display: block;
   height: 100%;
-  background-color: #3498db;
-  border-radius: 2px;
+  background-color: var(--accent-medium);
 }
 
-.high-relevance {
-  border-left: 4px solid #2ecc71;
-  background-color: rgba(46, 204, 113, 0.05);
+.match-quality {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: var(--gray-200);
+  color: var(--text-secondary);
 }
 
-.medium-relevance {
-  border-left: 4px solid #f39c12;
-  background-color: rgba(243, 156, 18, 0.05);
+.high-relevance .match-quality {
+  background-color: var(--accent-light);
+  color: var(--accent-dark);
 }
 
-.low-relevance {
-  border-left: 4px solid #95a5a6;
+.medium-relevance .match-quality {
+  background-color: var(--gray-300);
+  color: var(--gray-600);
 }
 
-.high-relevance .result-title {
-  color: #27ae60;
-}
-
-.result-coordinates {
-  color: #3498db;
+.result-coordinates, 
+.result-residence-coordinates,
+.result-residence,
+.result-related-person,
+.result-description {
+  margin-top: 8px;
   font-size: 14px;
-  margin-bottom: 5px;
+  color: var(--text-secondary);
 }
 
-.result-residence {
-  margin-bottom: 5px;
+.location-icon {
+  font-style: normal;
+  margin-right: 5px;
 }
 
 .relation-label {
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--text-secondary);
+  margin-right: 5px;
 }
 
-.residence-name {
-  margin-left: 5px;
-  color: #555;
-}
-
-.result-residence-coordinates {
-  color: #3498db;
-  font-size: 14px;
-  margin-bottom: 5px;
-}
-
-.result-related-person {
-  margin-bottom: 5px;
-}
-
+.residence-name, 
 .person-name {
-  margin-left: 5px;
-  color: #555;
+  color: var(--text-primary);
 }
 
 .result-related {
-  margin-top: 5px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-light);
 }
 
 .related-item {
   margin-bottom: 5px;
+  font-size: 14px;
 }
 
 .related-name {
-  margin-left: 5px;
-  color: #555;
+  color: var(--text-primary);
 }
 
 .related-type {
+  color: var(--text-light);
   font-size: 12px;
-  color: #777;
+  margin-left: 5px;
 }
 
-.result-description {
-  margin: 5px 0;
-  color: #555;
-}
-
-.match-quality {
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-  color: #666;
-  white-space: nowrap;
-}
-
-.high-relevance .match-quality {
-  background-color: rgba(46, 204, 113, 0.2);
-  color: #27ae60;
-}
-
-.medium-relevance .match-quality {
-  background-color: rgba(243, 156, 18, 0.2);
-  color: #d35400;
-}
-
-.low-relevance .match-quality {
-  background-color: rgba(149, 165, 166, 0.2);
-  color: #7f8c8d;
-}
-
-/* Pagination styling */
 .pagination-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  padding: 15px 0;
-  border-top: 1px solid #e1e4e8;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-light);
 }
 
 .pagination-button {
-  background-color: #f7f9fc;
-  color: #3498db;
-  border: 1px solid #e1e4e8;
-  padding: 8px 15px;
+  padding: 8px 16px;
+  background-color: var(--gray-200);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  color: var(--text-primary);
   transition: all 0.2s;
 }
 
 .pagination-button:hover:not(:disabled) {
-  background-color: #eaf2f8;
-  border-color: #3498db;
+  background-color: var(--accent-light);
+  border-color: var(--accent-medium);
 }
 
 .pagination-button:disabled {
-  color: #ccc;
+  background-color: var(--gray-200);
+  color: var(--gray-400);
   cursor: not-allowed;
+  border-color: var(--border-light);
 }
 
 .pagination-info {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .raw-json-details {
   margin-top: 20px;
-  border-top: 1px solid #e1e4e8;
-  padding-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
 }
 
 .raw-json-details summary {
   cursor: pointer;
-  color: #3498db;
-  font-weight: bold;
+  color: var(--text-secondary);
+  font-size: 14px;
   margin-bottom: 10px;
 }
 
-.location-icon {
-  font-style: normal;
-}
-
-/* Marker popup styling */
-:deep(.marker-popup) {
-  max-width: 300px;
-}
-
-:deep(.marker-popup p) {
-  margin: 5px 0;
+.raw-json-details summary:hover {
+  color: var(--accent-dark);
 }
 </style> 
