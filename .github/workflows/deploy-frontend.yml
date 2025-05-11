@@ -29,10 +29,12 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       
       - name: Install Dependencies
-        run: cd frontend && npm ci
+        working-directory: ./frontend
+        run: npm ci
       
       - name: Build
-        run: cd frontend && npm run build
+        working-directory: ./frontend
+        run: npm run build
         
       # Simple deployment using JamesIves action
       - name: Deploy to GitHub Pages
