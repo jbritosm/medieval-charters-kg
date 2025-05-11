@@ -17,7 +17,11 @@ const app = express();
 // Middleware Configuration
 // Enable CORS for both development and production
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://yourusername.github.io'],
+  origin: [
+    'http://localhost:5173',
+    'https://yourusername.github.io', 
+    'https://yourusername.github.io/medieval-charters-kg'
+  ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
