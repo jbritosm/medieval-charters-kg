@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // API base URL configuration
 // Use environment variable in production, fallback to production URL
-const API_URL = import.meta.env.VITE_API_URL || 'https://medieval-charters-api.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://medieval-charters-kg.onrender.com';
 
 const api = {
   // Search for entities in Wikibase
