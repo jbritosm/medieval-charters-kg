@@ -2,8 +2,8 @@
 import axios from 'axios';
 
 // API base URL configuration
-// Use environment variable in production, fallback to localhost for development
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Use environment variable in production, fallback to production URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://medieval-charters-api.onrender.com';
 
 const api = {
   // Search for entities in Wikibase
