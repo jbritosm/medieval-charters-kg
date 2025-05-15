@@ -9,7 +9,8 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest    
+    runs-on: ubuntu-latest   
+    environment: github-pages 
     env:
       VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
     steps:
