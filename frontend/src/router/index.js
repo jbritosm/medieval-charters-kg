@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import GeoSearch from '../components/GeoSearch.vue';
+import Search from '../components/Search.vue';
 import ResultDetails from '../components/ResultDetails.vue';
 
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: GeoSearch
+    component: Search
   },
   {
     path: '/result/:id',

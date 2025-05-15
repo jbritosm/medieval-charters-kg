@@ -1,5 +1,5 @@
 <template>
-  <div class="result-details" v-if="details">
+  <div class="activities-details" v-if="details">
     <div class="details-header">
       <div class="header-actions">
         <button @click="$emit('back')" class="back-button">
@@ -25,9 +25,9 @@
     <Map v-if="hasCoordinates" :coordinates="coordinates" />
 
     <div class="properties-container">
-      <h3>Properties</h3>
+      <h3>Activity Information</h3>
       <div v-if="!hasProperties" class="no-properties">
-        No properties found for this entity.
+        No information found for this activity.
       </div>
       <div v-else class="properties-list">
         <div v-for="(binding, index) in details.properties.results.bindings" 
@@ -92,7 +92,7 @@ const hasCoordinates = computed(() => {
 </script>
 
 <style scoped>
-.result-details {
+.activities-details {
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;

@@ -9,19 +9,13 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const config = require('./config/config');
 const searchRoutes = require('./routes/search');
-const sparqlRoutes = require('./routes/sparql');
-
+const searchPropertiesRoutes = require('./routes/searchProperties');
 // Initialize Express application
 const app = express();
 
 // Middleware Configuration
-// Enable CORS for all origins in production
-app.use(cors({
-  origin: '*', // Allow all origins for simplicity
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400 // Cache preflight request for 24 hours
-}));
+// Enable CORS for all routes
+app.use(cors());
 
 // Parse JSON request bodies
 app.use(bodyParser.json({ limit: '1mb' }));
@@ -48,11 +42,24 @@ app.get('/api/test', (req, res) => {
 // Search routes handle entity searches with SPARQL queries
 app.use('/api/search', searchRoutes);
 
-// SPARQL routes handle direct SPARQL queries to endpoints
-app.use('/api/sparql', sparqlRoutes);
+app.use('/api/searchProperties', searchPropertiesRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+});
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const debugLog = (...args) => {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+};
 
 // Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  debugLog(`Server running on http://localhost:${PORT}`);
 });
