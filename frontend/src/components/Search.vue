@@ -109,7 +109,7 @@ const searchQuery = ref('');           // Current search input
 const lastSearchQuery = ref('');       // Previous search query (for display)
 const loading = ref(false);            // Loading state flag
 const error = ref(null);               // Error message (if any)
-const results = ref({ search: [] });   // Raw search results with default empty array
+const results = ref(null);             // Raw search results
 const selectedResult = ref(null);       // Selected entity details
 const showDetails = ref(false);         // Flag to show details
 
@@ -233,12 +233,13 @@ const executeSearch = async () => {
   
   loading.value = true;
   error.value = null;
-  results.value = { search: [] };  // Reset to empty array
+  results.value = null;
   selectedResult.value = null;
   lastSearchQuery.value = searchQuery.value.trim();
   currentPage.value = 1;
-  
-  try {
+  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+
+  try {    
     const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
     
     if (!response.data.search) {
@@ -250,7 +251,6 @@ const executeSearch = async () => {
   } catch (err) {
     console.error("Search error:", err);
     error.value = err.message || "Error performing search";
-    results.value = { search: [] };  // Reset to empty array on error
   } finally {
     loading.value = false;
   }
