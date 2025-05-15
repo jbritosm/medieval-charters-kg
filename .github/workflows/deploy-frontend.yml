@@ -9,11 +9,11 @@ on:
 
 jobs:
   build-and-deploy:
-    env:
-          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
-          VITE_WIKIBASE_API_URL: ${{ vars.VITE_WIKIBASE_API_URL }}
-          VITE_WIKIBASE_ENTITY_URL: ${{ vars.VITE_WIKIBASE_ENTITY_URL }}
     runs-on: ubuntu-latest    
+    env:
+      VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
+      VITE_WIKIBASE_API_URL: ${{ vars.VITE_WIKIBASE_API_URL }}
+      VITE_WIKIBASE_ENTITY_URL: ${{ vars.VITE_WIKIBASE_ENTITY_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
