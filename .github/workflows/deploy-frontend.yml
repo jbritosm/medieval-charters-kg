@@ -15,7 +15,7 @@ jobs:
       VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
     steps:
       - name: Print API URL
-        run: echo "$VITE_API_URL"     
+        run: echo "$VITE_BACKEND_URL"     
       - name: Checkout code
         uses: actions/checkout@v3
         
