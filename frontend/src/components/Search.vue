@@ -226,11 +226,14 @@ const getComponentForType = (details) => {
 
 // Main search function
 const executeSearch = async () => {
+  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+
   if (!searchQuery.value.trim()) {
     error.value = "Please enter a search term";
     return;
   }
-  
+  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+
   loading.value = true;
   error.value = null;
   results.value = null;
