@@ -166,7 +166,7 @@ const debugLog = (...args) => {
 const handleResultClick = async (item) => {
   try {
     debugLog('Clicked item:', item);
-    const response = await axios.get(`http://localhost:3000/api/searchProperties/${item.id}`);
+    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/searchProperties/${item.id}`);
     debugLog('Properties response:', response.data);
     
     selectedResult.value = {
@@ -239,7 +239,7 @@ const executeSearch = async () => {
   currentPage.value = 1;
   
   try {
-    const response = await axios.get(`http://localhost:3000/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
+    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
     
     if (!response.data.search) {
       throw new Error("No results found");
@@ -254,6 +254,13 @@ const executeSearch = async () => {
     loading.value = false;
   }
 };
+
+const props = defineProps({
+  initialQuery: {
+    type: String,
+    default: ''
+  }
+});
 </script>
 
 <style scoped>

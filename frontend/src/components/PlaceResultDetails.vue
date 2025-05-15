@@ -58,35 +58,21 @@ const showJson = ref(false);
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-const debugLog = (...args) => {
-  if (isDevelopment) {
-    console.log(...args);
-  }
-};
-
 const hasProperties = computed(() => {
-  debugLog('Checking properties:', props.details?.properties);
   return props.details?.properties?.results?.bindings?.length > 0;
 });
 
 const coordinates = computed(() => {
-  debugLog('All bindings:', props.details?.properties?.results?.bindings);
   const binding = props.details?.properties?.results?.bindings?.find(
     b => {
-      debugLog('Checking binding:', b);
-      debugLog('Has coord?', !!b.coord);
-      debugLog('Coord value:', b.coord?.value);
       return b.coord?.value;
     }
   );
-  debugLog('Found binding with coordinates:', binding);
   return binding?.coord?.value;
 });
 
 const hasCoordinates = computed(() => {
   const hasCoords = !!coordinates.value;
-  debugLog('Has coordinates:', hasCoords);
-  debugLog('Coordinates value:', coordinates.value);
   return hasCoords;
 });
 </script>

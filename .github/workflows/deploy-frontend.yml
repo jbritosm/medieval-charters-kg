@@ -26,6 +26,10 @@ jobs:
         run: cd frontend && npm ci
       
       - name: Build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WIKIBASE_API_URL: ${{ secrets.VITE_WIKIBASE_API_URL }}
+          VITE_WIKIBASE_ENTITY_URL: ${{ secrets.VITE_WIKIBASE_ENTITY_URL }}
         run: cd frontend && npm run build
         
       - name: Deploy to GitHub Pages
