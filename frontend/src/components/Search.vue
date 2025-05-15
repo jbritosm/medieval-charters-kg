@@ -239,7 +239,7 @@ const executeSearch = async () => {
   currentPage.value = 1;
   
   try {
-    console.log(`${import.meta.env.VITE_BACKEND_URL}/api/searchProperties/${item.id}`)
+    console.log(`${import.meta.env.VITE_BACKEND_URL}`)
     const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
     
     if (!response.data.search) {
