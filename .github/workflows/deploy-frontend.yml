@@ -9,8 +9,11 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
-    
+    env:
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
+          VITE_WIKIBASE_API_URL: ${{ vars.VITE_WIKIBASE_API_URL }}
+          VITE_WIKIBASE_ENTITY_URL: ${{ vars.VITE_WIKIBASE_ENTITY_URL }}
+    runs-on: ubuntu-latest    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,10 +29,6 @@ jobs:
         run: cd frontend && npm ci
       
       - name: Build
-        env:
-          VITE_BACKEND_URL: ${{ vars.  }}
-          VITE_WIKIBASE_API_URL: ${{ vars.VITE_WIKIBASE_API_URL }}
-          VITE_WIKIBASE_ENTITY_URL: ${{ vars.VITE_WIKIBASE_ENTITY_URL }}
         run: cd frontend && npm run build
         
       - name: Deploy to GitHub Pages
