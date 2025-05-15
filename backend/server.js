@@ -14,8 +14,8 @@ const searchPropertiesRoutes = require('./routes/searchProperties');
 const app = express();
 
 // CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',')
+const allowedOrigins = import.meta.env.ALLOWED_ORIGINS 
+  ? import.meta.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:5173']; // Default to Vite's default port
 
 const corsOptions = {
