@@ -98,6 +98,9 @@ import PersonResultDetails from './PersonResultDetails.vue';
 import PlaceResultDetails from './PlaceResultDetails.vue';
 import ActivitiesResultDetails from './ActivitiesResultDetails.vue';
 
+// Initialize Vite environment variables
+const vite_backend_url = import.meta.env.VITE_BACKEND_URL;
+
 // Initialize Vue Router for navigation
 const router = useRouter();
 
@@ -116,6 +119,11 @@ const showDetails = ref(false);         // Flag to show details
 // Pagination state
 const currentPage = ref(1);            // Current page number
 const itemsPerPage = 10;               // Number of items per page
+
+// Variables
+const vite_backend_url = import.meta.env.VITE_BACKEND_URL;
+const vite_wikibase_api_url = import.meta.env.VITE_WIKIBASE_API_URL;
+const vite_wikibase_entity_url = import.meta.env.VITE_WIKIBASE_ENTITY_URL;
 
 // Computed properties for pagination
 const resultsCount = computed(() => {
@@ -166,7 +174,7 @@ const debugLog = (...args) => {
 const handleResultClick = async (item) => {
   try {
     debugLog('Clicked item:', item);
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/searchProperties/${item.id}`);
+    const response = await axios.get(`${vite_backend_url}/api/searchProperties/${item.id}`);
     debugLog('Properties response:', response.data);
     
     selectedResult.value = {
@@ -226,24 +234,22 @@ const getComponentForType = (details) => {
 
 // Main search function
 const executeSearch = async () => {
-  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
+  console.log(`Liadon: ${vite_backend_url}`)
 
   if (!searchQuery.value.trim()) {
     error.value = "Please enter a search term";
     return;
   }
-  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
-
+  
   loading.value = true;
   error.value = null;
-  results.value = null;
+  results.value = { search: [] };
   selectedResult.value = null;
   lastSearchQuery.value = searchQuery.value.trim();
   currentPage.value = 1;
-  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
-
-  try {    
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
+  
+  try {
+    const response = await axios.get(`${vite_backend_url}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
     
     if (!response.data.search) {
       throw new Error("No results found");
@@ -254,6 +260,7 @@ const executeSearch = async () => {
   } catch (err) {
     console.error("Search error:", err);
     error.value = err.message || "Error performing search";
+    results.value = { search: [] };
   } finally {
     loading.value = false;
   }
