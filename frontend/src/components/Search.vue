@@ -229,7 +229,7 @@ const getComponentForType = (details) => {
 
 // Main search function
 const executeSearch = async () => {
-  console.log(`Liadon: ${vite_backend_url}`)
+  console.log(vite_backend_url)
 
   if (!searchQuery.value.trim()) {
     error.value = "Please enter a search term";
