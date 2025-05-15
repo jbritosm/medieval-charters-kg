@@ -7,15 +7,14 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
-const config = require('./config/config');
 const searchRoutes = require('./routes/search');
 const searchPropertiesRoutes = require('./routes/searchProperties');
 // Initialize Express application
 const app = express();
 
 // CORS Configuration
-const allowedOrigins = import.meta.env.ALLOWED_ORIGINS 
-  ? import.meta.env.ALLOWED_ORIGINS.split(',')
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:5173']; // Default to Vite's default port
 
 const corsOptions = {
