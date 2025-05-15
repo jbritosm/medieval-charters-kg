@@ -3,6 +3,7 @@
  * Main server entry point that configures the Express application,
  * sets up middleware, and defines API routes.
  */
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');

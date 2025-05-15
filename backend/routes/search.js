@@ -7,9 +7,6 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-// Wikibase API endpoint for the Medieval Charters Knowledge Graph instance
-const WIKIBASE_API_URL = 'https://medievalcharterskg.wikibase.cloud/w/api.php';
-
 /**
  * @route   GET /api/search
  * @desc    Search for entities in the Medieval Charters Knowledge Graph
@@ -30,8 +27,9 @@ router.get('/', async (req, res) => {
   }
   
   try {
+    
     // Make request to Wikibase API with appropriate search parameters
-    const response = await axios.get(WIKIBASE_API_URL, {
+    const response = await axios.get(process.env.WIKIBASE_API_URL, {
       params: {
         action: 'wbsearchentities',  // Wikibase search action
         search: query,               // User's search query
@@ -46,7 +44,7 @@ router.get('/', async (req, res) => {
     return res.json(response.data);
     
   } catch (error) {
-    console.error('Wikibase API Error:', error.message);
+    console.error('Wikibase API Easdasdasrror:', error.message);
     
     // Comprehensive error handling with appropriate HTTP status codes
     if (error.response) {

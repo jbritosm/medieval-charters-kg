@@ -25,8 +25,11 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const props = defineProps({
   coordinates: {
-    type: String,
-    required: true
+    type: Object,
+    required: true,
+    validator: (value) => {
+      return typeof value.lat === 'number' && typeof value.lng === 'number';
+    }
   }
 });
 
@@ -35,26 +38,23 @@ let map = null;
 let marker = null;
 
 onMounted(() => {
-  // Parse coordinates from Point format
-  const match = props.coordinates.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
-  
-  if (!match) {
-    console.error('Invalid coordinate format:', props.coordinates);
+  if (!props.coordinates) {
+    console.error('No coordinates provided');
     return;
   }
+  console.log(props.coordinates)
+  const { lat, lng } = props.coordinates;
 
-  const [longitude, latitude] = match.slice(1).map(Number);
-
-  // Initialize map
-  map = L.map(mapContainer.value).setView([latitude, longitude], 13);
+  // Initialize map - interchange lat and lng
+  map = L.map(mapContainer.value).setView([lng, lat], 13);
   
   // Add tile layer (OpenStreetMap)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Add marker
-  marker = L.marker([latitude, longitude]).addTo(map);
+  // Add marker - interchange lat and lng
+  marker = L.marker([lng, lat]).addTo(map);
 });
 
 onBeforeUnmount(() => {

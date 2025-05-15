@@ -2,14 +2,10 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-router.get('/:id', async (req, res) => {
+router.get('/:entityId', async (req, res) => {
     try {
-        const entityId = req.params.id;
+        const { entityId } = req.params;
         
-        if (!entityId) {
-            return res.status(400).json({ error: 'Entity ID is required' });
-        }
-
         const sparqlQuery = `
 PREFIX wd: <https://medievalcharterskg.wikibase.cloud/entity/>       # Your entities
 PREFIX wdt: <https://medievalcharterskg.wikibase.cloud/prop/direct/> # Your direct properties
@@ -21,7 +17,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wdref: <http://www.wikidata.org/entity/>
 PREFIX wdtref: <http://www.wikidata.org/prop/direct/>
 
-SELECT ?propertyLabel ?valueLabel ?instanceOfLabel ?residenceLabel ?coord WHERE {
+SELECT ?propertyLabel ?valueLabel ?instanceOfLabel ?residenceLabel ?coord ?placeCoord WHERE {
   # Main entity data
   wd:${entityId} ?p ?value .
   ?property wikibase:directClaim ?p .
@@ -29,16 +25,28 @@ SELECT ?propertyLabel ?valueLabel ?instanceOfLabel ?residenceLabel ?coord WHERE 
   # Optional: instance of
   OPTIONAL { wd:${entityId} wdt:P3 ?instanceOf }
 
-  # Optional: residence + Wikidata coordinates
+  # Optional: residence + coordinates from Wikidata
   OPTIONAL {
     wd:${entityId} wdt:P55 ?residence .
     ?residence wdt:P2 ?residenceWD .
-
+    
     BIND(IRI(CONCAT("http://www.wikidata.org/entity/", ?residenceWD)) AS ?wdResidence)
 
     SERVICE <https://query.wikidata.org/sparql> {
       OPTIONAL {
         ?wdResidence wdtref:P625 ?coord .
+      }
+    }
+  }
+
+  # Optional: check if the main entity is a place with a Wikidata ID via P2
+  OPTIONAL {
+    wd:${entityId} wdt:P2 ?placeWD .
+    BIND(IRI(CONCAT("http://www.wikidata.org/entity/", ?placeWD)) AS ?wdPlace)
+
+    SERVICE <https://query.wikidata.org/sparql> {
+      OPTIONAL {
+        ?wdPlace wdtref:P625 ?placeCoord .
       }
     }
   }
@@ -49,23 +57,17 @@ SELECT ?propertyLabel ?valueLabel ?instanceOfLabel ?residenceLabel ?coord WHERE 
   }
 }`;
 
-        const response = await axios.post('https://medievalcharterskg.wikibase.cloud/query/sparql', 
-            `query=${encodeURIComponent(sparqlQuery)}`,
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                }
+        const response = await axios.get(process.env.WIKIBASE_SPARQL_URL, {
+            params: {
+                query: sparqlQuery,
+                format: 'json'
             }
-        );
+        });
 
         res.json(response.data);
     } catch (error) {
-        console.error('Error fetching entity properties:', error);
-        res.status(500).json({ 
-            error: 'Failed to fetch entity properties',
-            details: error.message 
-        });
+        console.error('Error fetching properties:', error);
+        res.status(500).json({ error: 'Error fetching properties' });
     }
 });
 

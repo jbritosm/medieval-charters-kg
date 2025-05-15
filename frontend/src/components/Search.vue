@@ -241,7 +241,6 @@ const executeSearch = async () => {
   selectedResult.value = null;
   lastSearchQuery.value = searchQuery.value.trim();
   currentPage.value = 1;
-  
   try {
     const response = await axios.get(`${vite_backend_url}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
     

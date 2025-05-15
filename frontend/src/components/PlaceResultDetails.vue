@@ -63,12 +63,23 @@ const hasProperties = computed(() => {
 });
 
 const coordinates = computed(() => {
-  const binding = props.details?.properties?.results?.bindings?.find(
-    b => {
-      return b.coord?.value;
-    }
-  );
-  return binding?.coord?.value;
+  if (!props.details?.properties?.results?.bindings) return null;
+  
+  // First check if it's a place (placeCoord)
+  const placeBinding = props.details.properties.results.bindings.find(b => b.placeCoord?.value);
+  if (placeBinding?.placeCoord?.value) {
+    const [lat, lon] = placeBinding.placeCoord.value.replace('Point(', '').replace(')', '').split(' ');
+    return { lat: parseFloat(lat), lng: parseFloat(lon) };
+  }
+  
+  // If not a place, check for residence coordinates (coord)
+  const coordBinding = props.details.properties.results.bindings.find(b => b.coord?.value);
+  if (coordBinding?.coord?.value) {
+    const [lat, lon] = coordBinding.coord.value.replace('Point(', '').replace(')', '').split(' ');
+    return { lat: parseFloat(lat), lng: parseFloat(lon) };
+  }
+  
+  return null;
 });
 
 const hasCoordinates = computed(() => {
