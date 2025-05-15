@@ -226,13 +226,13 @@ const getComponentForType = (details) => {
 
 // Main search function
 const executeSearch = async () => {
-  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
 
   if (!searchQuery.value.trim()) {
     error.value = "Please enter a search term";
     return;
   }
-  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
 
   loading.value = true;
   error.value = null;
@@ -240,7 +240,7 @@ const executeSearch = async () => {
   selectedResult.value = null;
   lastSearchQuery.value = searchQuery.value.trim();
   currentPage.value = 1;
-  console.log(`${import.meta.env.VITE_BACKEND_URL}`)
+  console.log(`Liadon: ${import.meta.env.VITE_BACKEND_URL}`)
 
   try {    
     const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/search?query=${encodeURIComponent(lastSearchQuery.value)}`);
