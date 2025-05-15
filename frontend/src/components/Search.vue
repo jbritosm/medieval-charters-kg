@@ -120,11 +120,6 @@ const showDetails = ref(false);         // Flag to show details
 const currentPage = ref(1);            // Current page number
 const itemsPerPage = 10;               // Number of items per page
 
-// Variables
-const vite_backend_url = import.meta.env.VITE_BACKEND_URL;
-const vite_wikibase_api_url = import.meta.env.VITE_WIKIBASE_API_URL;
-const vite_wikibase_entity_url = import.meta.env.VITE_WIKIBASE_ENTITY_URL;
-
 // Computed properties for pagination
 const resultsCount = computed(() => {
   if (!results.value || !results.value.search) {
