@@ -5,6 +5,12 @@
         <button @click="$emit('back')" class="back-button">
           ← Back to Results
         </button>
+        <a :href="`https://medievalcharterskg.wikibase.cloud/entity/${details.item.id}`" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="wikibase-button">
+          View in Wikibase
+        </a>
         <button @click="showJson = !showJson" class="toggle-json-button">
           {{ showJson ? 'Hide' : 'Show' }} JSON
         </button>
@@ -22,7 +28,9 @@
     </div>
 
     <!-- Map component -->
-    <Map v-if="hasCoordinates" :coordinates="coordinates" />
+    <div v-if="hasCoordinates" class="map-section">
+      <Map v-if="hasCoordinates" :coordinates="coordinates" />
+    </div>
 
     <div class="properties-container">
       <h3>Activity Information</h3>
@@ -34,7 +42,22 @@
              :key="index" 
              class="property-item">
           <div class="property-name">{{ binding.propertyLabel.value }}</div>
-          <div class="property-value">{{ binding.valueLabel.value }}</div>
+          <div class="property-value" :class="{ 
+            'scrollable-list': hasMultipleValues(binding.propertyLabel.value),
+            'scrollable': shouldBeScrollable(binding.propertyLabel.value)
+          }">
+            <template v-if="hasMultipleValues(binding.propertyLabel.value)">
+              <ul>
+                <li v-for="(valueBinding, valueIndex) in getValuesForProperty(binding.propertyLabel.value)" 
+                    :key="valueIndex">
+                  {{ valueBinding.valueLabel.value }}
+                </li>
+              </ul>
+            </template>
+            <template v-else>
+              {{ binding.valueLabel.value }}
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -95,6 +118,18 @@ const hasCoordinates = computed(() => {
   debugLog('Coordinates value:', coordinates.value);
   return hasCoords;
 });
+
+const hasMultipleValues = (propertyName) => {
+  return props.details.properties.results.bindings.filter(b => b.propertyLabel.value === propertyName).length > 1;
+};
+
+const shouldBeScrollable = (propertyName) => {
+  return props.details.properties.results.bindings.filter(b => b.propertyLabel.value === propertyName).length > 5;
+};
+
+const getValuesForProperty = (propertyName) => {
+  return props.details.properties.results.bindings.filter(b => b.propertyLabel.value === propertyName);
+};
 </script>
 
 <style scoped>
@@ -221,5 +256,66 @@ const hasCoordinates = computed(() => {
   color: #34495e;
   font-size: 15px;
   line-height: 1.4;
+}
+
+.property-value.scrollable-list {
+  padding-right: 10px;
+}
+
+.property-value.scrollable-list.scrollable {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.property-value.scrollable-list ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.property-value.scrollable-list li {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.property-value.scrollable-list li:last-child {
+  border-bottom: none;
+}
+
+/* Custom scrollbar for the list */
+.property-value.scrollable-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.property-value.scrollable-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.property-value.scrollable-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.property-value.scrollable-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.wikibase-button {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.wikibase-button:hover {
+  background-color: #e9ecef;
+  border-color: #2c3e50;
 }
 </style> 
